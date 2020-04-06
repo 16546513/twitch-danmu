@@ -7,7 +7,7 @@
 // @match        https://www.twitch.tv/*
 // ==/UserScript==
 
-;(function() {
+;(function () {
   let DEV = true
 
   class Css {
@@ -50,19 +50,43 @@
       this.create()
       Danmu.append(this)
     }
+    static ensureRow() {
+      let row = Danmu.opts.rows
+      Danmu.opts.rows = (row + 1) % Danmu.opts.totalRows
+      if (!Danmu.danmus[row]) {
+        Danmu.danmus[row] = []
+      }
+      return row
+    }
+    static ensureTop(row) {
+      return row * Danmu.opts.danmu.size + Danmu.opts.danmu.rowGap
+    }
+    static ensureLeft(row) {
+      if (Danmu.danmus[row].length == 0) {
+        return Danmu.opts.areaWidth
+      }
+      let back = Danmu.danmus[row][Danmu.danmus[row].length - 1]
+      if (back.left + back.dom.clientWidth < Danmu.opts.areaWidth) {
+        return Danmu.opts.areaWidth
+      }
+      return back.left + back.dom.clientWidth + Danmu.opts.danmu.colGap
+    }
     create() {
-      this.left = Danmu.opts.areaWidth
+      this.row = Danmu.ensureRow()
+      this.left = Danmu.ensureLeft(this.row)
+      this.top = Danmu.ensureTop(this.row)
       this.dom = new Dom('span')
-        .set('font-size', Danmu.opts.danmu.size)
+        .set('font-size', Danmu.opts.danmu.size + 'px')
         .set('color', Danmu.opts.danmu.color)
         .set('position', Danmu.opts.danmu.position)
+        .set('top', this.top + 'px')
         .set('transform', `translateX(${this.left}px)`)
-        .set('transition', 'transform')
+        // .set('transition', 'transform')
         .get()
       this.dom.innerText = this.text
     }
     static append(danmu) {
-      Danmu.danmus.push(danmu)
+      Danmu.danmus[danmu.row].push(danmu)
       if (DEV) {
         // console.log(danmu)
       }
@@ -90,8 +114,10 @@
       _run()
     }
     static render() {
-      Danmu.danmus.forEach(danmu => {
-        danmu.render()
+      Danmu.danmus.forEach((danmus) => {
+        danmus.forEach((danmu) => {
+          danmu.render()
+        })
       })
     }
     render() {
@@ -108,10 +134,10 @@
       }
     }
     static clean(danmu) {
-      for (let i = 0; i < Danmu.danmus.length; i++) {
-        if (danmu == Danmu.danmus[i]) {
+      for (let i = 0; i < Danmu.danmus[danmu.row].length; i++) {
+        if (danmu == Danmu.danmus[danmu.row][i]) {
           Danmu.area.removeChild(danmu.dom)
-          return Danmu.danmus.splice(i, 1)
+          return Danmu.danmus[danmu.row].splice(i, 1)
         }
       }
     }
@@ -146,16 +172,20 @@
       Danmu.danmus = []
       Danmu.opts = {
         sel: {
-          area: '.persistent-player'
+          area: '.persistent-player',
         },
         danmu: {
           color: '#fff',
-          size: '100%',
+          size: 16,
           speed: 3,
-          position: 'absolute'
+          position: 'absolute',
+          rowGap: 5,
+          colGap: 25,
         },
+        rows: 0,
+        totalRows: 5,
         isStop: false,
-        running: false
+        running: false,
       }
       Danmu.find()
         .then(Danmu.mk)
@@ -179,11 +209,11 @@
     static init() {
       Ob.opts = {
         sel: {
-          list: '.chat-list__list-container'
+          list: '.chat-list__list-container',
         },
         obOpt: {
-          childList: true
-        }
+          childList: true,
+        },
       }
       Ob.find()
         .then(Ob.ob)
@@ -224,7 +254,7 @@
     }
     static parseText(message) {
       let text = []
-      let cb = node => {
+      let cb = (node) => {
         let fr = node.innerText.trim()
         if (Parser.valid(fr)) {
           text.push(fr)
@@ -243,8 +273,8 @@
         sel: {
           name: '.chat-line__username .chat-author__display-name',
           text: '.text-fragment',
-          mention: '.mention-fragment'
-        }
+          mention: '.mention-fragment',
+        },
       }
     }
   }
