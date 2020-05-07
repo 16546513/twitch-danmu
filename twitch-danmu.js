@@ -3,12 +3,11 @@
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  提供twitch弹幕支持
-// @author       xxx
+// @author       16546513
 // @match        https://www.twitch.tv/*
 // ==/UserScript==
 
 ;(function () {
-  let DEV = true
 
   class Css {
     static set(name, value) {
@@ -81,15 +80,11 @@
         .set('position', Danmu.opts.danmu.position)
         .set('top', this.top + 'px')
         .set('transform', `translateX(${this.left}px)`)
-        // .set('transition', 'transform')
         .get()
       this.dom.innerText = this.text
     }
     static append(danmu) {
       Danmu.danmus[danmu.row].push(danmu)
-      if (DEV) {
-        // console.log(danmu)
-      }
       if (Danmu.area) {
         Danmu.area.appendChild(danmu.dom)
         if (!Danmu.isStop && !Danmu.running) {
@@ -245,9 +240,6 @@
     static parse(message, danmu) {
       danmu.name = Parser.parseName(message)
       danmu.text = Parser.parseText(message)
-      if (DEV) {
-        // console.log(danmu.name, ':', danmu.text)
-      }
     }
     static walk(message, sel, cb) {
       message.querySelectorAll(sel).forEach(cb)
